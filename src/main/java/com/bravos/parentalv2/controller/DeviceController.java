@@ -11,7 +11,6 @@ import com.bravos.parentalv2.model.LockStatus;
 import com.bravos.parentalv2.service.DeviceEventService;
 import com.bravos.parentalv2.service.DeviceService;
 import com.bravos.parentalv2.websocket.DeviceSessionManager;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -19,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.util.List;
