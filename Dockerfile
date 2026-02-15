@@ -2,7 +2,7 @@
 FROM eclipse-temurin:25.0.2_10-jdk AS build
 WORKDIR /app
 
-COPY gradlew gradlew.bat build.gradle settings.gradle ./
+COPY gradlew gradlew.bat build.gradle.kts settings.gradle.kts ./
 COPY gradle/ gradle/
 
 RUN chmod +x gradlew
