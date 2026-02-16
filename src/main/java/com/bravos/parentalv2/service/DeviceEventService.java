@@ -38,8 +38,15 @@ public class DeviceEventService {
     deviceEventRepository.save(event);
   }
 
+  @Transactional(readOnly = true)
   public Page<DeviceEventResponse> getEventsForDevice(String deviceId, int page, int size) {
+    if(deviceId.isBlank()) {
+      throw new IllegalArgumentException("Device ID is required");
+    }
     Device device = deviceService.findByDeviceId(deviceId);
+    if(device == null) {
+      throw new IllegalArgumentException("Device ID is required and must exist");
+    }
     Pageable pageable = PageRequest.of(page, size);
     return deviceEventRepository.findByDeviceOrderByTimestampDesc(device, pageable).map(this::toResponse);
   }
