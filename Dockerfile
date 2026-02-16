@@ -23,7 +23,7 @@ RUN jdeps --ignore-missing-deps -q \
     build/libs/parentalv2.jar > deps.txt
 
 RUN jlink \
-    --add-modules $(cat deps.txt),java.base,java.logging,java.naming,jdk.compiler,java.desktop,java.management,java.security.jgss,java.instrument,jdk.crypto.ec,jdk.unsupported \
+    --add-modules $(cat deps.txt),java.base,java.sql,java.logging,java.naming,jdk.compiler,java.desktop,java.management,java.security.jgss,java.instrument,jdk.crypto.ec,jdk.unsupported \
     --compress zip-9 \
     --strip-debug \
     --no-header-files \

@@ -31,6 +31,7 @@ public class DeviceService {
     device.setDeviceName(deviceName);
     device.setIpAddress(ipAddress);
     device.setStatus(DeviceStatus.ONLINE);
+    device.setLockStatus(LockStatus.LOCKED);
     device.setLastSeen(LocalDateTime.now());
 
     return deviceRepository.save(device);

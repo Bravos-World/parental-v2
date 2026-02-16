@@ -15,6 +15,8 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
+import java.util.Map;
+
 @Component
 public class DeviceWebSocketHandler extends TextWebSocketHandler {
 
@@ -74,10 +76,8 @@ public class DeviceWebSocketHandler extends TextWebSocketHandler {
 
     log.info("Device registered: {} ({}) from {}", deviceName, deviceId, ipAddress);
 
-    // Send acknowledgment
     try {
-      String ack = objectMapper.writeValueAsString(
-          java.util.Map.of("type", "registered", "status", "ok"));
+      String ack = objectMapper.writeValueAsString(Map.of("type", "registered", "status", "ok"));
       session.sendMessage(new TextMessage(ack));
     } catch (Exception e) {
       log.error("Error sending registration ack to device {}", deviceId, e);
@@ -138,8 +138,7 @@ public class DeviceWebSocketHandler extends TextWebSocketHandler {
   @Override
   public void handleTransportError(@NonNull WebSocketSession session, Throwable exception) {
     String deviceId = sessionManager.getDeviceId(session);
-    log.error("Transport error for device {}: {}", deviceId != null ? deviceId : session.getId(),
-        exception.getMessage());
+    log.error("Transport error for device {}: {}", deviceId != null ? deviceId : session.getId(), exception.getMessage());
   }
 
 }

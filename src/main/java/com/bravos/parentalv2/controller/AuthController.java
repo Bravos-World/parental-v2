@@ -3,6 +3,7 @@ package com.bravos.parentalv2.controller;
 import com.bravos.parentalv2.dto.ApiResponse;
 import com.bravos.parentalv2.dto.ChangePasswordRequest;
 import com.bravos.parentalv2.dto.LoginRequest;
+import com.bravos.parentalv2.dto.RegisterRequest;
 import com.bravos.parentalv2.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -17,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/auth")
-@Tag(name = "Authentication", description = "Login, logout, and password management")
+@Tag(name = "Authentication", description = "Login, logout, registration, and password management")
 public class AuthController {
 
   private final AuthService authService;
@@ -29,7 +30,7 @@ public class AuthController {
   @PostMapping("/login")
   @Operation(summary = "Login with username and password")
   public ResponseEntity<ApiResponse<Void>> login(@Valid @RequestBody LoginRequest request,
-                                                 HttpServletRequest httpRequest) {
+      HttpServletRequest httpRequest) {
     authService.authenticate(request.getUsername(), request.getPassword());
 
     HttpSession session = httpRequest.getSession(true);
@@ -37,6 +38,13 @@ public class AuthController {
     session.setAttribute("username", request.getUsername());
 
     return ResponseEntity.ok(ApiResponse.success("Login successful"));
+  }
+
+  @PostMapping("/register")
+  @Operation(summary = "Create a new admin account")
+  public ResponseEntity<ApiResponse<Void>> register(@Valid @RequestBody RegisterRequest request) {
+    authService.register(request.getUsername(), request.getPassword());
+    return ResponseEntity.ok(ApiResponse.success("Account created successfully"));
   }
 
   @PostMapping("/logout")
@@ -51,8 +59,11 @@ public class AuthController {
 
   @PostMapping("/change-password")
   @Operation(summary = "Change admin password")
-  public ResponseEntity<ApiResponse<Void>> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
-    authService.changePassword(request.getOldPassword(), request.getNewPassword());
+  public ResponseEntity<ApiResponse<Void>> changePassword(@Valid @RequestBody ChangePasswordRequest request,
+      HttpServletRequest httpRequest) {
+    HttpSession session = httpRequest.getSession(false);
+    String username = (String) session.getAttribute("username");
+    authService.changePassword(username, request.getOldPassword(), request.getNewPassword());
     return ResponseEntity.ok(ApiResponse.success("Password changed successfully"));
   }
 

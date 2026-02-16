@@ -35,7 +35,7 @@ public class Device {
   @Enumerated(EnumType.STRING)
   @Column(name = "lock_status", nullable = false)
   @Builder.Default
-  private LockStatus lockStatus = LockStatus.UNLOCKED;
+  private LockStatus lockStatus = LockStatus.LOCKED;
 
   @Column(name = "last_seen")
   private LocalDateTime lastSeen;

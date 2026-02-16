@@ -41,8 +41,7 @@ public class DeviceEventService {
   public Page<DeviceEventResponse> getEventsForDevice(String deviceId, int page, int size) {
     Device device = deviceService.findByDeviceId(deviceId);
     Pageable pageable = PageRequest.of(page, size);
-    return deviceEventRepository.findByDeviceOrderByTimestampDesc(device, pageable)
-        .map(this::toResponse);
+    return deviceEventRepository.findByDeviceOrderByTimestampDesc(device, pageable).map(this::toResponse);
   }
 
   private DeviceEventResponse toResponse(DeviceEvent event) {

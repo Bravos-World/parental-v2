@@ -76,7 +76,8 @@ public class DeviceController {
       String commandJson = objectMapper.writeValueAsString(Map.of(
           "type", "command",
           "command", request.getCommandType().name(),
-          "delaySeconds", request.getDelaySeconds()));
+          "delaySeconds", request.getDelaySeconds())
+      );
       sessionManager.sendToDevice(deviceId, commandJson);
 
       // Log the command event

@@ -9,6 +9,7 @@ spring:
     driver-class-name: org.postgresql.Driver
     hikari:
       auto-commit: true
+      maximum-pool-size: 5
 
   jpa:
     hibernate:
@@ -23,6 +24,11 @@ spring:
 
 server:
   port: ${SERVER_PORT:8080}
+  tomcat:
+    max-swallow-size: 32KB
+    threads:
+      min-spare: 5
+      max: 200
 
 admin:
   username: ${ADMIN_USERNAME:admin}

@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "com.bravos"
-version = "1.0.0"
+version = "1.0.1"
 description = "parentalv2"
 
 java {
@@ -35,7 +35,6 @@ dependencies {
     runtimeOnly("org.postgresql:postgresql")
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
     annotationProcessor("org.projectlombok:lombok")
-    testImplementation("org.springframework.boot:spring-boot-starter-test")
 }
 
 tasks.jar {

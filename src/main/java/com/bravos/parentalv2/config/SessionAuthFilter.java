@@ -22,6 +22,11 @@ public class SessionAuthFilter extends OncePerRequestFilter {
   protected void doFilterInternal(HttpServletRequest request,
                                   @NonNull HttpServletResponse response,
                                   @NonNull FilterChain filterChain) throws ServletException, IOException {
+    String uri = request.getRequestURI();
+    if(!uri.startsWith("/ws") && !uri.startsWith("/api/") && !uri.startsWith("/swagger-ui/") && !uri.startsWith("/v3/api-docs/")) {
+      response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+      return;
+    }
     HttpSession session = request.getSession(false);
 
     if (session != null && Boolean.TRUE.equals(session.getAttribute("authenticated"))) {
