@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "com.bravos"
-version = "1.0.1"
+version = "1.0.2"
 description = "parentalv2"
 
 java {
