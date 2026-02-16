@@ -1,5 +1,6 @@
 package com.bravos.parentalv2.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -19,6 +20,9 @@ import java.util.List;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+
+  @Value("${app.cors.allowed-origin}")
+  private String corsAllowedOrigin;
 
   private final SessionAuthFilter sessionAuthFilter;
 
@@ -58,8 +62,9 @@ public class SecurityConfig {
   @Bean
   public CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration config = new CorsConfiguration();
-    config.setAllowedOriginPatterns(List.of("*"));
-    config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+    String[] allowedOrigins = corsAllowedOrigin.split(",");
+    config.setAllowedOrigins(List.of(allowedOrigins));
+    config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"));
     config.setAllowedHeaders(List.of("*"));
     config.setAllowCredentials(true);
 
