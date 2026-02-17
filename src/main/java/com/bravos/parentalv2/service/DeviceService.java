@@ -2,9 +2,11 @@ package com.bravos.parentalv2.service;
 
 import com.bravos.parentalv2.dto.DeviceResponse;
 import com.bravos.parentalv2.exception.DeviceNotFoundException;
+import com.bravos.parentalv2.exception.DeviceOnlineException;
 import com.bravos.parentalv2.model.Device;
 import com.bravos.parentalv2.model.DeviceStatus;
 import com.bravos.parentalv2.model.LockStatus;
+import com.bravos.parentalv2.repository.DeviceEventRepository;
 import com.bravos.parentalv2.repository.DeviceRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,9 +18,11 @@ import java.util.List;
 public class DeviceService {
 
   private final DeviceRepository deviceRepository;
+  private final DeviceEventRepository deviceEventRepository;
 
-  public DeviceService(DeviceRepository deviceRepository) {
+  public DeviceService(DeviceRepository deviceRepository, DeviceEventRepository deviceEventRepository) {
     this.deviceRepository = deviceRepository;
+    this.deviceEventRepository = deviceEventRepository;
   }
 
   @Transactional
@@ -55,14 +59,6 @@ public class DeviceService {
   }
 
   @Transactional
-  public void markOnline(String deviceId) {
-    Device device = findByDeviceId(deviceId);
-    device.setStatus(DeviceStatus.ONLINE);
-    device.setLastSeen(LocalDateTime.now());
-    deviceRepository.save(device);
-  }
-
-  @Transactional
   public void markOffline(String deviceId) {
     deviceRepository.findByDeviceId(deviceId).ifPresent(device -> {
       device.setStatus(DeviceStatus.OFFLINE);
@@ -82,6 +78,16 @@ public class DeviceService {
   public Device findByDeviceId(String deviceId) {
     return deviceRepository.findByDeviceId(deviceId)
         .orElseThrow(() -> new DeviceNotFoundException(deviceId));
+  }
+
+  @Transactional
+  public void deleteDevice(String deviceId) {
+    Device device = findByDeviceId(deviceId);
+    if (device.getStatus() == DeviceStatus.ONLINE) {
+      throw new DeviceOnlineException(deviceId);
+    }
+    deviceEventRepository.deleteByDevice(device);
+    deviceRepository.delete(device);
   }
 
   private DeviceResponse toResponse(Device device) {

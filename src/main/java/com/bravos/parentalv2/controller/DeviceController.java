@@ -16,6 +16,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import tools.jackson.databind.ObjectMapper;
@@ -36,6 +37,8 @@ public class DeviceController {
   private final DeviceSessionManager sessionManager;
   private final ObjectMapper objectMapper;
 
+  private final String unlockNowCommand;
+
   public DeviceController(DeviceService deviceService,
                           DeviceEventService deviceEventService,
                           DeviceSessionManager sessionManager,
@@ -44,6 +47,12 @@ public class DeviceController {
     this.deviceEventService = deviceEventService;
     this.sessionManager = sessionManager;
     this.objectMapper = objectMapper;
+
+    this.unlockNowCommand = objectMapper.writeValueAsString(Map.of(
+        "type", "command",
+        "command", CommandType.UNLOCK.name(),
+        "delaySeconds", 0
+    ));
   }
 
   @GetMapping
@@ -64,6 +73,14 @@ public class DeviceController {
     return ResponseEntity.ok(ApiResponse.success(deviceService.getDevice(deviceId)));
   }
 
+  @DeleteMapping("/{deviceId}")
+  @Operation(summary = "Delete a device (only offline devices can be deleted)")
+  public ResponseEntity<ApiResponse<Void>> deleteDevice(@PathVariable String deviceId) {
+    deviceService.deleteDevice(deviceId);
+    log.info("Device deleted: {}", deviceId);
+    return ResponseEntity.status(HttpStatus.NO_CONTENT).body(ApiResponse.success("Device deleted successfully"));
+  }
+
   @PostMapping("/{deviceId}/command")
   @Operation(summary = "Send command to a specific device (lock, unlock, shutdown, restart)")
   public ResponseEntity<ApiResponse<Void>> sendCommand(@PathVariable String deviceId,
@@ -71,23 +88,20 @@ public class DeviceController {
     if (!sessionManager.isOnline(deviceId)) {
       throw new DeviceOfflineException(deviceId);
     }
-
     try {
       String commandJson = objectMapper.writeValueAsString(Map.of(
           "type", "command",
           "command", request.getCommandType().name(),
           "delaySeconds", request.getDelaySeconds())
       );
+
       sessionManager.sendToDevice(deviceId, commandJson);
 
-      // Log the command event
       EventType eventType = mapCommandToEvent(request.getCommandType());
       if (eventType != null) {
         String desc = String.format("%s with %ds delay", request.getCommandType(), request.getDelaySeconds());
         deviceEventService.logEvent(deviceId, eventType, desc);
       }
-
-      // Update lock status for lock/unlock commands
       if (request.getCommandType() == CommandType.LOCK) {
         deviceService.updateLockStatus(deviceId, LockStatus.LOCKED);
       } else if (request.getCommandType() == CommandType.UNLOCK) {
@@ -95,6 +109,29 @@ public class DeviceController {
       }
 
       return ResponseEntity.ok(ApiResponse.success("Command sent successfully"));
+    } catch (IOException e) {
+      throw new DeviceOfflineException(deviceId);
+    }
+  }
+
+  @PostMapping("/{deviceId}/unlock-now/{lockAfterSeconds}")
+  @Operation(summary = "Unlock a device immediately and optionally lock it again after a delay")
+  public ResponseEntity<ApiResponse<Void>> unlockNowInTime(@PathVariable String deviceId,
+                                                           @PathVariable int lockAfterSeconds) {
+    if (!sessionManager.isOnline(deviceId)) {
+      throw new DeviceOfflineException(deviceId);
+    }
+    try {
+      sessionManager.sendToDevice(deviceId, unlockNowCommand);
+      deviceService.updateLockStatus(deviceId, LockStatus.UNLOCKED);
+      String lockCommandJson = objectMapper.writeValueAsString(Map.of(
+          "type", "command",
+          "command", CommandType.LOCK.name(),
+          "delaySeconds", lockAfterSeconds)
+      );
+      sessionManager.sendToDevice(deviceId, lockCommandJson);
+      deviceEventService.logEvent(deviceId, EventType.UNLOCK, "Unlock now command sent with " + lockAfterSeconds + "s lock delay");
+      return ResponseEntity.ok(ApiResponse.success("Unlock command sent successfully"));
     } catch (IOException e) {
       throw new DeviceOfflineException(deviceId);
     }
@@ -128,8 +165,6 @@ public class DeviceController {
           "command", request.getCommandType().name(),
           "delaySeconds", request.getDelaySeconds()));
       sessionManager.sendToAll(commandJson);
-
-      // Log event for all online devices
       EventType eventType = mapCommandToEvent(request.getCommandType());
       for (String deviceId : sessionManager.getOnlineDeviceIds()) {
         if (eventType != null) {
@@ -143,12 +178,10 @@ public class DeviceController {
           deviceService.updateLockStatus(deviceId, LockStatus.UNLOCKED);
         }
       }
-
       return ResponseEntity.ok(ApiResponse.success("Command sent to all devices"));
     } catch (Exception e) {
       log.error("Error sending broadcast command", e);
-      return ResponseEntity.internalServerError()
-          .body(ApiResponse.error("Error sending command to devices"));
+      return ResponseEntity.internalServerError().body(ApiResponse.error("Error sending command to devices"));
     }
   }
 
@@ -163,8 +196,7 @@ public class DeviceController {
       return ResponseEntity.ok(ApiResponse.success("Message sent to all devices"));
     } catch (Exception e) {
       log.error("Error sending broadcast message", e);
-      return ResponseEntity.internalServerError()
-          .body(ApiResponse.error("Error sending message to devices"));
+      return ResponseEntity.internalServerError().body(ApiResponse.error("Error sending message to devices"));
     }
   }
 

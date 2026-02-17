@@ -20,4 +20,6 @@ public interface DeviceEventRepository extends JpaRepository<DeviceEvent, Long> 
 
   List<DeviceEvent> findByDeviceAndEventTypeOrderByTimestampDesc(Device device, EventType eventType);
 
+  void deleteByDevice(Device device);
+
 }

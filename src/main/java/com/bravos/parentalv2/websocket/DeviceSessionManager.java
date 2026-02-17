@@ -3,6 +3,7 @@ package com.bravos.parentalv2.websocket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 
 import java.io.IOException;
@@ -62,7 +63,7 @@ public class DeviceSessionManager {
   public void sendToDevice(String deviceId, String message) throws IOException {
     WebSocketSession session = deviceSessions.get(deviceId);
     if (session != null && session.isOpen()) {
-      session.sendMessage(new org.springframework.web.socket.TextMessage(message));
+      session.sendMessage(new TextMessage(message));
     } else {
       throw new IOException("Device " + deviceId + " is not connected");
     }
@@ -72,7 +73,7 @@ public class DeviceSessionManager {
     deviceSessions.forEach((deviceId, session) -> {
       if (session.isOpen()) {
         try {
-          session.sendMessage(new org.springframework.web.socket.TextMessage(message));
+          session.sendMessage(new TextMessage(message));
         } catch (IOException e) {
           log.error("Error sending message to device {}", deviceId, e);
         }

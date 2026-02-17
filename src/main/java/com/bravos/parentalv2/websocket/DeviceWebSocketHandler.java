@@ -1,5 +1,7 @@
 package com.bravos.parentalv2.websocket;
 
+import com.bravos.parentalv2.model.CommandType;
+import com.bravos.parentalv2.model.Device;
 import com.bravos.parentalv2.model.EventType;
 import com.bravos.parentalv2.model.LockStatus;
 import com.bravos.parentalv2.service.DeviceEventService;
@@ -15,6 +17,7 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
+import java.net.InetAddress;
 import java.util.Map;
 
 @Component
@@ -27,6 +30,9 @@ public class DeviceWebSocketHandler extends TextWebSocketHandler {
   private final DeviceEventService deviceEventService;
   private final ObjectMapper objectMapper;
 
+  private final String lockNowMessage;
+  private final String okMessage;
+
   public DeviceWebSocketHandler(DeviceSessionManager sessionManager,
                                 DeviceService deviceService,
                                 DeviceEventService deviceEventService,
@@ -35,6 +41,15 @@ public class DeviceWebSocketHandler extends TextWebSocketHandler {
     this.deviceService = deviceService;
     this.deviceEventService = deviceEventService;
     this.objectMapper = objectMapper;
+
+    this.lockNowMessage = objectMapper.writeValueAsString(Map.of
+        (
+        "type", "command",
+        "command", CommandType.LOCK.name(),
+        "delaySeconds", 0
+        )
+    );
+    this.okMessage = objectMapper.writeValueAsString(Map.of("type", "registered", "status", "ok"));
   }
 
   @Override
@@ -48,7 +63,6 @@ public class DeviceWebSocketHandler extends TextWebSocketHandler {
     try {
       JsonNode json = objectMapper.readTree(message.getPayload());
       String type = json.path("type").asString();
-
       switch (type) {
         case "register" -> handleRegister(session, json);
         case "status" -> handleStatusUpdate(session, json);
@@ -63,22 +77,19 @@ public class DeviceWebSocketHandler extends TextWebSocketHandler {
   private void handleRegister(WebSocketSession session, JsonNode json) {
     String deviceId = json.path("deviceId").asString();
     String deviceName = json.path("deviceName").asString();
-    String ipAddress = json.path("ipAddress").asString();
-
+    InetAddress inetAddress = session.getRemoteAddress() != null ? session.getRemoteAddress().getAddress() : null;
+    String ipAddress = inetAddress != null ? inetAddress.getHostAddress() : json.path("ipAddress").asString("unknown");
     if (deviceId.isBlank()) {
       log.warn("Register message missing deviceId from session {}", session.getId());
       return;
     }
-
-    deviceService.registerOrUpdate(deviceId, deviceName, ipAddress);
-    sessionManager.registerSession(deviceId, session);
-    deviceEventService.logEvent(deviceId, EventType.CONNECT);
-
-    log.info("Device registered: {} ({}) from {}", deviceName, deviceId, ipAddress);
-
+    Device device = deviceService.registerOrUpdate(deviceId, deviceName, ipAddress);
+    sessionManager.registerSession(device.getDeviceId(), session);
+    deviceEventService.logEvent(device.getDeviceId(), EventType.CONNECT);
+    log.info("Device registered: {} ({}) from {}", device.getDeviceName(), device.getDeviceId(), ipAddress);
     try {
-      String ack = objectMapper.writeValueAsString(Map.of("type", "registered", "status", "ok"));
-      session.sendMessage(new TextMessage(ack));
+      session.sendMessage(new TextMessage(okMessage));
+      session.sendMessage(new TextMessage(lockNowMessage));
     } catch (Exception e) {
       log.error("Error sending registration ack to device {}", deviceId, e);
     }
