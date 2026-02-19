@@ -25,8 +25,8 @@ public class SessionAuthFilter extends OncePerRequestFilter {
     String uri = request.getRequestURI();
     if (!uri.startsWith("/ws") &&
         !uri.startsWith("/api/") &&
-        !uri.startsWith("/swagger-ui/") &&
-        !uri.startsWith("/v3/api-docs/")) {
+        !uri.startsWith("/swagger-ui") &&
+        !uri.startsWith("/v3/api-docs")) {
       response.setStatus(444);
       return;
     }

@@ -7,7 +7,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -57,35 +57,7 @@ public class SecurityConfig {
 
   @Bean
   public PasswordEncoder passwordEncoder() {
-    int cores = Runtime.getRuntime().availableProcessors();
-    int parallelism = Math.min(Math.max(cores / 2, 1), 4);
-
-    long maxMemoryBytes = Runtime.getRuntime().maxMemory();
-    long maxMemoryMB = maxMemoryBytes / (1024 * 1024);
-
-    int memoryMB = (int) (maxMemoryMB * 0.07);
-    memoryMB = Math.clamp(memoryMB, 32, 256);
-
-    int memoryKb = memoryMB * 1024;
-    int iterations;
-
-    if (memoryMB >= 128) {
-      iterations = 3;
-    } else if (memoryMB >= 64) {
-      iterations = 4;
-    } else {
-      iterations = 5;
-    }
-
-    int saltLength = 16;
-    int hashLength = 32;
-    return new Argon2PasswordEncoder(
-        saltLength,
-        hashLength,
-        parallelism,
-        memoryKb,
-        iterations
-    );
+    return new BCryptPasswordEncoder(12);
   }
 
   @Bean

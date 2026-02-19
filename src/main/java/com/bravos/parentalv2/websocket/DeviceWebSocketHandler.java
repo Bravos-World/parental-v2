@@ -77,8 +77,11 @@ public class DeviceWebSocketHandler extends TextWebSocketHandler {
   private void handleRegister(WebSocketSession session, JsonNode json) {
     String deviceId = json.path("deviceId").asString();
     String deviceName = json.path("deviceName").asString();
-    InetAddress inetAddress = session.getRemoteAddress() != null ? session.getRemoteAddress().getAddress() : null;
-    String ipAddress = inetAddress != null ? inetAddress.getHostAddress() : json.path("ipAddress").asString("unknown");
+    String ipAddress = session.getHandshakeHeaders().getFirst("X-Real-IP");
+    if (ipAddress == null || ipAddress.isBlank()) {
+      InetAddress inetAddress = session.getRemoteAddress() != null ? session.getRemoteAddress().getAddress() : null;
+      ipAddress = inetAddress != null ? inetAddress.getHostAddress() : json.path("ipAddress").asString("unknown");
+    }
     if (deviceId.isBlank()) {
       log.warn("Register message missing deviceId from session {}", session.getId());
       return;
