@@ -23,19 +23,20 @@ public class SessionAuthFilter extends OncePerRequestFilter {
                                   @NonNull HttpServletResponse response,
                                   @NonNull FilterChain filterChain) throws ServletException, IOException {
     String uri = request.getRequestURI();
-    if(!uri.startsWith("/ws") && !uri.startsWith("/api/") && !uri.startsWith("/swagger-ui/") && !uri.startsWith("/v3/api-docs/")) {
-      response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+    if (!uri.startsWith("/ws") &&
+        !uri.startsWith("/api/") &&
+        !uri.startsWith("/swagger-ui/") &&
+        !uri.startsWith("/v3/api-docs/")) {
+      response.setStatus(444);
       return;
     }
     HttpSession session = request.getSession(false);
-
     if (session != null && Boolean.TRUE.equals(session.getAttribute("authenticated"))) {
       String username = (String) session.getAttribute("username");
       UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
           username, null, List.of(new SimpleGrantedAuthority("ROLE_ADMIN")));
       SecurityContextHolder.getContext().setAuthentication(auth);
     }
-
     filterChain.doFilter(request, response);
   }
 

@@ -12,14 +12,19 @@ import org.springframework.web.socket.server.standard.ServletServerContainerFact
 public class WebSocketConfig implements WebSocketConfigurer {
 
   private final DeviceWebSocketHandler deviceWebSocketHandler;
+  private final WebSocketAuthInterceptor webSocketAuthInterceptor;
 
-  public WebSocketConfig(DeviceWebSocketHandler deviceWebSocketHandler) {
+  public WebSocketConfig(DeviceWebSocketHandler deviceWebSocketHandler,
+                         WebSocketAuthInterceptor webSocketAuthInterceptor) {
     this.deviceWebSocketHandler = deviceWebSocketHandler;
+    this.webSocketAuthInterceptor = webSocketAuthInterceptor;
   }
 
   @Override
   public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
-    registry.addHandler(deviceWebSocketHandler, "/ws/device").setAllowedOrigins("*");
+    registry.addHandler(deviceWebSocketHandler, "/ws/device")
+        .addInterceptors(webSocketAuthInterceptor)
+        .setAllowedOrigins("*");
   }
 
   @Bean
@@ -29,6 +34,5 @@ public class WebSocketConfig implements WebSocketConfigurer {
     container.setMaxBinaryMessageBufferSize(8 * 1024);
     return container;
   }
-
 
 }
